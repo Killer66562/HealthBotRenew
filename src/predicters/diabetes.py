@@ -21,7 +21,7 @@ class IPredicter(ABC):
 
 class DiabetesPredicter(IPredicter):
     RESULT_HAVE_DIABETES = "have_diabetes"
-    RESULT_DIABETES_PERCENTAGE = "diabetes_precentage"
+    RESULT_DIABETES_PERCENTAGE = "diabetes_percentage"
 
     COLUMNS = ['gender', 'age', 'bmi', 'HbA1c_level', 'blood_glucose_level']
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from typing import Any
 from abc import ABC, abstractmethod
 
@@ -8,6 +10,8 @@ from discord.ui import Button
 
 from . import views
 import predicters
+
+import requests
 
 
 class Updatable(ABC):
@@ -102,7 +106,24 @@ class DiabetesCheckAnswerButton(ButtonWithAnswerView, Updatable):
             self.disabled = False
 
     async def callback(self, interaction: views.Interaction) -> Any:
-        result = self._predicter.predict(self.__collect_values())
+        collected = self.__collect_values()
+
+        gender = collected[0]
+        age = collected[1]
+        bmi = collected[2]
+        hba1c = collected[3]
+        blood_sugar = collected[4]
+
+        response = requests.post("http://120.107.172.113:8000/predict/diabetes", json={
+            "gender": gender,
+            "age": age,
+            "bmi": bmi,
+            "hba1c": hba1c,
+            "blood_sugar": blood_sugar
+        })
+
+        result: dict[str, Any] = json.loads(response.content)
+
         have_diabetes: bool = result.get(predicters.DiabetesPredicter.RESULT_HAVE_DIABETES)
         diabetes_percentage: float = result.get(predicters.DiabetesPredicter.RESULT_DIABETES_PERCENTAGE)
         color = Color.red() if have_diabetes else Color.green()
