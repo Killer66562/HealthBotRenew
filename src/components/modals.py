@@ -51,6 +51,7 @@ class AgeModal(TextInputModal):
             if age_value < 0:
                 raise ValueError()
             self._parent_view.answer = age_value
+            self._parent_view.next_view = self._next_view
             return await interaction.response.edit_message(view=self._next_view, embed=self._next_view.embed)
         except ValueError:
             return await interaction.response.send_message(content="請輸入一個有效的正整數", ephemeral=True)
@@ -66,6 +67,7 @@ class BMIModal(TextInputModal):
         try:
             bmi_value = float(self._answer)
             self._parent_view.answer = bmi_value
+            self._parent_view.next_view = self._next_view
             return await interaction.response.edit_message(view=self._next_view, embed=self._next_view.embed)
         except ValueError:
             return await interaction.response.send_message(content="請輸入一個有效的小數", ephemeral=True)
@@ -83,6 +85,7 @@ class HBA1CModal(TextInputModal):
             if age_value < 0:
                 raise ValueError()
             self._parent_view.answer = age_value
+            self._parent_view.next_view = self._next_view
             return await interaction.response.edit_message(view=self._next_view, embed=self._next_view.embed)
         except ValueError:
             return await interaction.response.send_message(content="請輸入一個有效的小數", ephemeral=True)
@@ -100,6 +103,7 @@ class BlooadSugarModal(TextInputModal):
             if age_value < 0:
                 raise ValueError()
             self._parent_view.answer = age_value
+            self._parent_view.next_view = self._next_view
             return await interaction.response.edit_message(view=self._next_view, embed=self._next_view.embed)
         except ValueError:
             return await interaction.response.send_message(content="請輸入一個有效的小數", ephemeral=True)

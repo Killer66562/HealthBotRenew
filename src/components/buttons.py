@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Any
 from abc import ABC, abstractmethod
 
-from discord import ButtonStyle, Emoji, PartialEmoji
+from discord import ButtonStyle, Color, Embed, Emoji, PartialEmoji
 from discord.ui import Button
 
 from . import views
+import predicters
 
 
 class Updatable(ABC):
@@ -78,11 +79,10 @@ class CallModalButton(ButtonWithAnswerView, Updatable):
     
 
 class DiabetesCheckAnswerButton(ButtonWithAnswerView, Updatable):
-    def __init__(self, start_view: views.ViewNode, predicter, answer_view: views.ViewNode, answer: Any | None = None, *, style: ButtonStyle = ButtonStyle.secondary, label: str | None = None, disabled: bool = False, custom_id: str | None = None, url: str | None = None, emoji: str | Emoji | PartialEmoji | None = None, row: int | None = None, sku_id: int | None = None):
+    def __init__(self, start_view: views.ViewNode, predicter: predicters.DiabetesPredicter, answer_view: views.ViewNode, answer: Any | None = None, *, style: ButtonStyle = ButtonStyle.secondary, label: str | None = "看結果", disabled: bool = False, custom_id: str | None = None, url: str | None = None, emoji: str | Emoji | PartialEmoji | None = None, row: int | None = None, sku_id: int | None = None):
         super().__init__(answer_view, answer, style=style, label=label, disabled=disabled, custom_id=custom_id, url=url, emoji=emoji, row=row, sku_id=sku_id)
         self._start_view = start_view
         self._predicter = predicter
-        self.__collected_values = list()
 
     def __collect_values(self):
         values = list()
@@ -92,15 +92,22 @@ class DiabetesCheckAnswerButton(ButtonWithAnswerView, Updatable):
                 break
             values.append(current_view.answer)
             current_view = current_view.next_view
-        self.__collected_values = values
+        return values
 
     def update(self):
-        self.__collect_values()
-        if len(self.__collected_values) != self._predicter.required_values_len:
+        values = self.__collect_values()
+        if len(values) != self._predicter.required_values_len:
             self.disabled = True
         else:
             self.disabled = False
 
     async def callback(self, interaction: views.Interaction) -> Any:
-        result = self._predicter.predict(self.__collected_values)
-        return await super().callback(interaction)
+        result = self._predicter.predict(self.__collect_values())
+        have_diabetes: bool = result.get(predicters.DiabetesPredicter.RESULT_HAVE_DIABETES)
+        diabetes_percentage: float = result.get(predicters.DiabetesPredicter.RESULT_DIABETES_PERCENTAGE)
+        color = Color.red() if have_diabetes else Color.green()
+        have_diabetes_str = "是" if have_diabetes else "否"
+        result_embed = Embed(title="智能健康管家", description="檢測結果", color=color)
+        result_embed.add_field(name="是否罹患糖尿病", value=have_diabetes_str, inline=False)
+        result_embed.add_field(name="罹患糖尿病機率", value=f"{diabetes_percentage}%", inline=False)
+        return await interaction.response.edit_message(embed=result_embed, view=None)

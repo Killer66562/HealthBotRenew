@@ -3,13 +3,17 @@ from discord.ext.commands import Cog
 from discord.app_commands.commands import command, describe, rename
 from discord.interactions import Interaction
 
+import joblib
+
 from components import \
 ButtonWithAnswerView, PrevPageButton, NextPageButton, CallModalButton, ViewNode, \
 BMIInputFactory, AgeInputFactory, HBA1CInputFactory, BloodSugarInputFactory, \
-AgeModalFactory, BMIModalFactory, HBA1CModalFactory, BloodSugarModalFactory
+AgeModalFactory, BMIModalFactory, HBA1CModalFactory, BloodSugarModalFactory, DiabetesCheckAnswerButton
+
+from predicters import DiabetesPredicter
 
 
-EMBED_TITLE = "健康智能管家"
+EMBED_TITLE = "智能健康管家"
 
 BTN_PREV_PAGE = "prev_page"
 BTN_NEXT_PAGE = "next_page"
@@ -17,13 +21,17 @@ BTN_CALL_MODAL = "call_modal"
 
 ANS_YES = True
 ANS_DIABETES = "diabetes"
-ANS_MALE = "male"
-ANS_FEMALE = "female"
+ANS_MALE = 0
+ANS_FEMALE = 1
 
 LABEL_YES = "是"
 LABEL_DIABETES = "糖尿病"
 LABEL_MALE = "男"
 LABEL_FAMALE = "女"
+
+MODEL_URL = "diabete_prediction_model.pkl"
+
+model = joblib.load(MODEL_URL)
 
 
 class SurveyCog(Cog):
@@ -31,7 +39,7 @@ class SurveyCog(Cog):
         super().__init__()
 
     @command(name="survey", description="填寫問卷")
-    async def survey(self, interaction: Interaction):
+    async def survey(self, interaction: Interaction, ephemerl: bool = True):
         intro_embed = Embed(title=EMBED_TITLE, description="您好\n我是智能健康管家\n請問您要進行檢測嗎？\n\n填寫過程中\n若有填寫錯誤\n隨時都可以按上一頁或下一頁回頭重填喔！", color=Color.green())
         check_type_embed = Embed(title=EMBED_TITLE, description="請選擇您要檢測的項目。", color=Color.yellow())
         gender_embed = Embed(title=EMBED_TITLE, description="請選擇您的性別。", color=Color.magenta())
@@ -105,4 +113,10 @@ class SurveyCog(Cog):
         hba1c_view.modal_factory = hba1c_modal_factory
         blood_suger_view.modal_factory = blood_sugar_modal_factory
 
-        return await interaction.response.send_message(view=intro_view, embed=intro_view.embed, ephemeral=True)
+        diabetes_predicter = DiabetesPredicter(model=model)
+
+        diabetes_check_ans_button = DiabetesCheckAnswerButton(start_view=gender_view, predicter=diabetes_predicter, answer_view=final_view, style=ButtonStyle.blurple)
+
+        final_view.add_item(diabetes_check_ans_button)
+
+        return await interaction.response.send_message(view=intro_view, embed=intro_view.embed, ephemeral=ephemerl)
